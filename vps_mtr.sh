@@ -11,7 +11,10 @@ fi
 # 기본 측정 설정 (1초 간격 x 30회 = 타깃당 약 30초)
 COUNT=30
 INTERVAL=1
-HOST_NAME=$(hostname -s 2>/dev/null || hostname)
+RAW_HOST=$(hostname -s 2>/dev/null || hostname)
+HOST_NAME=$(printf '%s' "$RAW_HOST" | tr -cd 'A-Za-z0-9._-')
+[ -z "$HOST_NAME" ] && HOST_NAME="unknown-host"
+
 FILE_TS=$(TZ='Asia/Seoul' date '+%Y%m%d_%H%M%S')
 START_TIME=$(TZ='Asia/Seoul' date '+%Y-%m-%d %H:%M:%S KST')
 OUT_FILE="mtr_${HOST_NAME}_${FILE_TS}.txt"
@@ -45,8 +48,11 @@ TARGETS=(
   "oracle-chuncheon|ns3.aodd.xyz"
   "oracle-osaka|ns2.aodd.xyz"
   "hostbrr-frankfurt|hostbrr-frankfurt.wgvpn.in"
-  "하바롭스크_1_Misaka|185.209.84.131"
-  "하바롭스크_2_Rostelecom|87.225.45.1"
+  "하바롭스크_1_Rostelecom|87.225.45.1"
+  "하바롭스크_2_TTK|217.150.56.138"
+  "하바롭스크_3_Misaka|185.209.84.131"
+  "하바롭스크_4_EdgeCenter|92.38.191.67"
+  "하바롭스크_5_MTS|94.243.20.1"
 )
 
 TOTAL=${#TARGETS[@]}
@@ -83,7 +89,8 @@ for entry in "${TARGETS[@]}"; do
     echo "--------------------------------------------------------------------------------"
     echo "[${IDX}/${TOTAL}] ${LABEL} (${TARGET}) | Start: ${NOW}"
     echo "--------------------------------------------------------------------------------"
-    mtr -4 -rwzb -c "$COUNT" -i "$INTERVAL" "$TARGET" 2>&1
+    COLUMNS=240 mtr -4 -rwzb -c "$COUNT" -i "$INTERVAL" "$TARGET" 2>&1 \
+      | sed -E 's/(AS[0-9]+ [0-9]+)([A-Za-z])/\1  \2/g'
     echo ""
   } >> "$OUT_FILE"
 
